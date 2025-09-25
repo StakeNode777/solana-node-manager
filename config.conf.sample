@@ -1,0 +1,50 @@
+#It has the same format as for .env file
+
+#For the test purposes if you don't want to run real autotransfer
+EMULATE_TRANSFER=1
+
+#should be 'mainnet' or 'testnet'
+CLUSTER=testnet
+
+#Please provide Validator public keys here
+PUB_IDENTITY=0000INSERT000PUB000IDENTITY000THERE
+PUB_VOTE=0000INSERT000PUB000VOTE000THERE
+
+#to receive notifications onto Telegram you should create Telegram bot and provide it token there.
+#Also you should add Group or Chat ID - bot should send notifications there
+#TG_TOKEN=
+#TG_CHAT_ID=
+
+#For debug purposes for avoiding simultaneous running script. Leave it empty
+#TRANSFER_LOCK_ENTITY_PREFIX=
+
+#For failover you should enable at least one Validator checker
+#DelinquentChecker - when validator is behind 32 slots then snm detects such case transfers identity to the spare server
+#StrongCreditsDropChecker - when credits go down more than 400 credits from top 200 
+# due epoch then snm transit identity to the spare server
+#SuspiciousCreditsDropChecker - when credits go down mre than 50 credits from top 200 
+# due last 2 minutes, then extra checks are performed and in the problem case 
+# snm transfers identity to other server
+#CHECKERS=DelinquentChecker,StrongCreditsDropChecker,SuspiciousCreditsDropChecker
+CHECKERS=DelinquentChecker
+
+#For safe SSH interface for third parties like Web Solana Node Manager
+#REQUEST_DIR='/home/wsnm/snm_request_dir'
+
+
+#SERVER CONFIGS
+
+SRV_NAME_1=super_srv
+SRV_IP_1=111.111.111.111
+SRV_USER_1=sol
+SRV_PASSWORD_1=SuperPassword
+
+SRV_NAME_2=super_spare_srv
+SRV_IP_2=222.222.222.222
+SRV_USER_2=sol
+SRV_PASSWORD_2=SuperPassword2
+
+#SRV_NAME_3=
+#SRV_IP_3=
+#SRV_USER_3=
+#SRV_PASSWORD_3=

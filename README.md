@@ -66,13 +66,15 @@ All these files are stored inside an **encrypted directory** and loaded into mem
 
 ---
 
-### Installation Steps
+### Installation steps
 
 ```bash
-sudo apt-get update && sudo apt-get upgrade && sudo apt-get install git
+sudo apt update && sudo apt upgrade -y && sudo apt install -y git
 git clone https://github.com/StakeNode777/solana-node-manager
 bash ~/solana-node-manager/install.sh
 ```
+
+> 💡 For improved security, consider installing under a non-root user with sudo privileges.
 
 ---
 

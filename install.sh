@@ -51,7 +51,7 @@ if [ -d "config" ]; then
 fi
 
 sudo apt-get update && sudo apt-get upgrade -y
-sudo apt install -y mc curl gocryptfs nano php php-curl
+sudo apt install -y curl gocryptfs nano php php-curl
 read -p "Solana version: " SOLANA_VERSION
 sh -c "$(curl -sSfL https://release.anza.xyz/v${SOLANA_VERSION}/install)"
 export PATH="${HOME}/.local/share/solana/install/active_release/bin:$PATH"

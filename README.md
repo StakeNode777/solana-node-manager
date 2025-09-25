@@ -2,14 +2,16 @@
 
 **Instant Hot Swap & Failover Tool for Solana Validators with Enhanced Security**
 
-Solana Node Manager is a simple and secure CLI tool for manual and automatic hot-swapping of a Solana validator identity between two or more servers, ensuring 99.9%+ uptime.  
+Solana Node Manager (SNM) is a simple and secure CLI tool for manual and automated hot-swapping of Solana validator identities between two or more servers, ensuring **99.9%+ uptime**.  
 
-Keys and server credentials are stored in encrypted form.  
-Built in pure PHP with minimal dependencies for maximum security.  
+All keys and server credentials are stored in encrypted form, preventing unauthorized access in rescue mode or after reboot.  
+SNM is built in pure PHP with minimal dependencies to maximize transparency and security.  
 
-It also provides a safe interface for managing validator transfers via websites or applications, powered by SSH-based command exchange.  
+The tool is shipped with pre-bundled vendor content to mitigate supply chain attacks.  
 
-✅ Compatible with **Agave** and **Jito Solana** validators.  
+It also provides a secure interface for managing validator transfers via websites or applications, powered by SSH-based command exchange.  
+
+✅ Fully compatible with **Agave** and **Jito-Solana** validators. 
 
 ---
 
@@ -57,9 +59,10 @@ All these files are stored inside an **encrypted directory** and loaded into mem
 
 ### Server Requirements
 
-- Separate **VPS/Dedicated server** for Solana Node Manager  
-- Ubuntu 22.04/24.04 (with **swap disabled** for security reasons). It is also possible to use other Debian-based distributions (not tested yet).
-- Located geographically close to validator servers (to minimize transfer latency)  
+- Separate VPS/Dedicated server for Solana Node Manager  
+- Ubuntu 22.04/24.04. It is also possible to use other Debian-based distributions (not tested yet).
+- Highly recommended to **disable swap** for security reasons — SNM keeps keys and config in memory in certain modes, and they should never be written to disk.
+- Highly recommended to locate geographically close to validator servers (to minimize transfer latency)  
 
 ---
 
@@ -91,8 +94,7 @@ sudo chmod 777 /home/wsnm/snm_request_dir
 
 To enable Telegram notifications:
 
-1. Create a new bot with **@BotFather** by sending the command `/newbot` and save the token  
-   (looks like `123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11`).  
+1. Create a new bot with [@BotFather](https://t.me/botfather) by sending the command `/newbot` and save the generated token (looks like `123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11`). 
 
 2. Create a group, add your bot as an **administrator**, and send at least one message in the group.  
 

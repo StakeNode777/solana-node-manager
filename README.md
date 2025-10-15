@@ -143,7 +143,7 @@ Main scripts:
 - **Fast Hot Swap:** 0.8 to 3 seconds hot swap operations  
 - **Automated Failover:** automatic failover when the primary validator goes down  
 - **Security and Transparency** — built in pure PHP with minimal dependencies and fully auditable code
-- **Encrypted Sensitive Data:** validator key and SSH access to validator servers are stored in encrypted form and loaded into memory only during runtime.
+- **Encrypted Sensitive Data:** validator key and SSH access to validator servers are stored in encrypted form and loaded into memory only during runtime
 - **Up to 9 spare servers:** easily switch between up to 10 configured servers  
 - **Hot Swap Compatibility:** supports both Agave and Jito validators  
 - **Telegram Alerts:** receive alerts about problems on main/spare servers, failover success/failure, and SNM health status  

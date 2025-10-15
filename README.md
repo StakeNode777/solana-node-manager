@@ -20,8 +20,9 @@ It also provides a secure interface for managing validator transfers via website
 - ⚡ **Instant hot swap** — 0.8 to 3 seconds  
 - 🔄 **Automatic failover** with minimal downtime  
 - 🌐 Switch between two or more servers  
-- 🔑 Validator identity key stored encrypted  
-- 🔐 Server access credentials also stored encrypted  
+- 🛡️ Focus on source code **security and transparency**
+- 🔑 **Encrypted** validator identity and server credentials   
+- 🧠 Simple configuration and CLI-based operation
 - 📲 Monitoring & alerts via Telegram  
 - 🌍 Possible management through a web interface (“Web Solana Node Manager”)  
 - 🧪 Tested on both testnet and mainnet  
@@ -53,7 +54,7 @@ During setup, you will need to provide:
 
 - **Validator identity key** (`validator-keypair.json`)  
 
-All these files are stored inside an **encrypted directory** and loaded into memory only when required by `solana-node-manager`.
+All these files are stored inside an **encrypted directory**. When running, Solana Node Manager loads them into memory for the duration of its operation.
 
 ---
 
@@ -134,6 +135,19 @@ Main scripts:
 - `bash test_conf.sh` — validates configuration and server connections.  
 - `bash transfer_safe.sh` — performs a manual hot swap with pre-checks.  
 - `bash activate_safe.sh` — activates a spare validator node (useful if no active node is currently running).  
+
+---
+
+## Key Features
+
+- **Fast Hot Swap:** 0.8 to 3 seconds hot swap operations  
+- **Automated Failover:** automatic failover when the primary validator goes down  
+- **Security and Transparency** — built in pure PHP with minimal dependencies and fully auditable code..
+- **Encrypted Sensitive Data:** validator key and SSH access to validator servers are stored in encrypted form and loaded into memory only during runtime.
+- **Up to 9 spare servers:** easily switch between up to 10 configured servers  
+- **Hot Swap Compatibility:** supports both Agave and Jito validators  
+- **Telegram Alerts:** receive alerts about problems on main/spare servers, failover success/failure, and SNM health status  
+- **Safe Web Interface:** possible safe management through “Web Solana Node Manager” GUI  
 
 ---
 

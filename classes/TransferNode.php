@@ -349,20 +349,21 @@ class TransferNode implements TransferNodeInterface
     }
     
     /**
-     * Очень важная функция. 
-     * Если поменяется пользователь для запуска активной ноды и мы об этом не знаем,
-     * то может упасть и активная и запасная сервера сразу.
-     * 
-     * Пример случая:
-     * Запускали ноду из-под yura, а потом стали запускать под root на том же сервере.
-     * Доступы под yura остались. 
-     * В случае проверки на падение под пользователем yura покажет, что не работает, 
-     * попытается неудачно деактивировать и удачно активирует
-     * Будет одновременно две ноды, которые сразу же упадут
-     * 
-     * Данная функция проверяет ссылку /etc/systemd/system/solana.service, 
-     * чтобы она ссылалась на solana.service в домашней папке пользователя
-     * 
+     * DEPRECATED - use checkServerProcessAndUser() instead
+     * This method is not good for servers without solana.service
+     * Very important method.
+     * If the user running the active node changes and we are not aware of it,
+     * both the active and the backup servers may crash simultaneously.
+     *
+     * Example scenario:
+     * The node was originally started under the 'sol' user, but later it was
+     * launched under 'root' on the same server. Access for 'sol' still exists.
+     * During a failover check performed as user 'sol', it will appear as not running,
+     * then it will unsuccessfully try to deactivate and successfully activate again.
+     * As a result, two nodes will be running at the same time, which will immediately crash.
+     *
+     * This function checks the symlink /etc/systemd/system/solana.service
+     * to ensure it points to the solana.service file located in the user's home directory.
      */
     public function checkServerConfig(NodeServerInterface $srv)
     {       
@@ -377,16 +378,66 @@ class TransferNode implements TransferNodeInterface
             . "Please provide proper credentials to the server!!!";
             throw new TransferNodeException($msg);
         }
-    }     
+    } 
+    
+    public function checkServerProcessAndUser(NodeServerInterface $srv)
+    {
+        $msg_start = "Server {$srv->name} ({$srv->ip}) has a problem:";
+        
+        $rows = self::getListOfAgaveValidatorProcesses($srv);
+        if (empty($rows)) {
+            $msg = "$msg_start agave-validator is not running";
+            throw new TransferNodeException($msg);
+        }
+        $num = count($rows);
+        if ($num > 1) {
+            $msg = "$msg_start more than one agave-validator process is running. Only a single instance should run";
+            throw new TransferNodeException($msg);
+        }
+        
+        $user = trim($srv->exec("echo \$USER"));
+        
+        foreach($rows as $row){
+            if ($user!=$row['user']) {
+                $msg = "$msg_start the agave-validator process is running under a different user ({$row['user']}), but it should be {$user}.";
+                throw new TransferNodeException($msg);
+            }
+            break;
+        }
+    }
+    
+    public static function getListOfAgaveValidatorProcesses(NodeServerInterface $srv) {        
+        $cmd = "ps -eo user,pid,cmd | grep agave-validator | grep -v grep";
+        $output = $srv->exec($cmd);
+        $lines = explode("\n", $output);
+
+        if (empty($lines)) {
+            return [];
+        }
+        
+        $rows = [];
+
+        foreach ($lines as $line) {
+            if (preg_match('/^(\S+)\s+\d+\s+(.*)$/', $line, $matches)) {
+                $user = $matches[1];
+                $process  = $matches[2];
+                $rows[] = ['process' => $process, 'user' => $user];
+            }
+        }
+
+        return $rows;
+    }
     
     public function validateServerCommon(NodeServer $srv)
     {        
         $this->tryToConnect($srv);
         
-        $this->checkServerConfig($srv);
+        //$this->checkServerConfig($srv); //this method is not good for servers without solana.service
+        $this->checkServerProcessAndUser($srv);
         
-        $service_options = self::getOptionsFromServiceFile($srv);
-        
+        //$service_options = self::getOptionsFromServiceFile($srv); //this method is not good for servers without solana.service
+        $service_options = self::getOptionsFromValidatorProcess($srv);
+
         if (!isset($service_options['ledger'])) {
             throw new TransferNodeException("--ledger option not detected in solana.service - {$srv->status_label}. IP: {$srv->ip}");
         }
@@ -412,6 +463,31 @@ class TransferNode implements TransferNodeInterface
         }         
     }
     
+    public static function getOptionsFromValidatorProcess(NodeServerInterface $srv)
+    {
+        $rows = self::getListOfAgaveValidatorProcesses($srv);
+        $process = $rows[0]['process'];
+       
+        preg_match_all('/--([a-zA-Z0-9\-]+)\s+(\S+)/', $process, $matches, PREG_SET_ORDER);
+
+        $options = [];
+        foreach ($matches as $match) {
+            $key = $match[1];
+            $value = $match[2];
+            $options[$key][] = $value;
+        }        
+        
+        return $options; 
+    }
+    
+    /**
+     * DEPRECATED - use getOptionsFromValidatorProcess() instead
+     * This method is not good for servers without solana.service
+     * return options from solana.service
+     * @param NodeServerInterface $srv
+     * @return type
+     * @throws TransferNodeException
+     */
     public static function getOptionsFromServiceFile(NodeServerInterface $srv)
     {
         $solana_service_path = "~/solana.service";
@@ -460,16 +536,16 @@ class TransferNode implements TransferNodeInterface
         $private_key = $this->_private_key;
         $to_srv = $this->getServerByInfo($to_srv);
         $to_srv->setStatusLabel('TO_SRV');   
-        $to_so = self::getOptionsFromServiceFile($to_srv);
+        $to_so = self::getOptionsFromValidatorProcess($to_srv);
         
         $to_ledger = isset($to_so['ledger'][0]) ? $to_so['ledger'][0] : '~/ledger';        
-        $to_tower_dir = isset($to_so['tower'][0]) ? $to_so['tower'][0] : $to_ledger;           
+        $to_tower_dir = isset($to_so['tower'][0]) ? $to_so['tower'][0] : $to_ledger; 
         
         if ($transfer_mode=='safe' || $transfer_mode=='transfer_only') {
             self::log("Starting Transfer...\n");
             $from_srv = $this->getServerByInfo($from_srv);
             $from_srv->setStatusLabel('FROM_SRV');       
-            $from_so = self::getOptionsFromServiceFile($from_srv);                
+            $from_so = self::getOptionsFromValidatorProcess($from_srv);
             $from_ledger = isset($from_so['ledger'][0]) ? $from_so['ledger'][0] : '~/ledger';
 
             //old server   
@@ -501,9 +577,9 @@ class TransferNode implements TransferNodeInterface
     
     public static function deactivate($srv)
     {
-        $to_so = self::getOptionsFromServiceFile($srv);
+        $from_so = self::getOptionsFromValidatorProcess($srv);
         
-        $from_ledger = isset($to_so['ledger'][0]) ? $to_so['ledger'][0] : '~/ledger';        
+        $from_ledger = isset($from_so['ledger'][0]) ? $from_so['ledger'][0] : '~/ledger';
        
         $cmd = "source ~/.profile; "
             . "agave-validator -l {$from_ledger} set-identity ~/unstaked-identity.json; "
@@ -517,10 +593,10 @@ class TransferNode implements TransferNodeInterface
         $private_key = $this->_private_key;
         $to_srv = $this->getServerByInfo($to_srv);
         $to_srv->setStatusLabel('TO_SRV');   
-        $to_so = self::getOptionsFromServiceFile($to_srv);
+        $to_so = self::getOptionsFromValidatorProcess($to_srv);
         
         $to_ledger = isset($to_so['ledger'][0]) ? $to_so['ledger'][0] : '~/ledger';        
-        $to_tower_dir = isset($to_so['tower'][0]) ? $to_so['tower'][0] : $to_ledger;          
+        $to_tower_dir = isset($to_so['tower'][0]) ? $to_so['tower'][0] : $to_ledger;  
         
         self::log("Preparing for transfer/activation on to_srv");
         
@@ -532,8 +608,8 @@ class TransferNode implements TransferNodeInterface
         if ($transfer_mode=='safe' || $transfer_mode=='transfer_only') {
             self::log("Starting Transfer...\n");
             $from_srv = $this->getServerByInfo($from_srv);
-            $from_srv->setStatusLabel('FROM_SRV');       
-            $from_so = self::getOptionsFromServiceFile($from_srv);                
+            $from_srv->setStatusLabel('FROM_SRV');                     
+            $from_so = self::getOptionsFromValidatorProcess($from_srv);
             $from_ledger = isset($from_so['ledger'][0]) ? $from_so['ledger'][0] : '~/ledger';
 
             //old server        
@@ -555,7 +631,13 @@ class TransferNode implements TransferNodeInterface
        
         $cmd = "source ~/.profile; "
                 . "echo '{$private_key}' | agave-validator -l {$to_ledger} set-identity; ";
-        $cmd_res = $to_srv->exec($cmd); 
+        $cmd_res = $to_srv->exec($cmd);
+        self::log("to_srv activated");
+
+        $cmd = "source ~/.profile; "
+            . "agave-validator -l {$from_ledger} authorized-voter remove-all";        
+        $cmd_res = $from_srv->exec($cmd);
+        self::log("from_srv removed authorized-voter");
         //echo "emulate:\n {$cmd}\n";
         self::log("Transfer finished");        
     }   

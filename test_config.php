@@ -13,7 +13,7 @@ $params = [
 
 $cli_options = getopt(implode('', array_keys($params)), $params);  
     
-$config_dir = isset($cli_options['config_dir']) ? $cli_options['config_dir'] : '.env';
+$config_dir = isset($cli_options['config_dir']) ? $cli_options['config_dir'] : 'config';
 $config_file = "{$config_dir}/config.conf";
 $private_key_path = "{$config_dir}/validator-keypair.json";
                 
@@ -37,11 +37,12 @@ $pub_vote = Env::get('PUB_VOTE');
 $servers_data = CliTransferNodeHelper::loadServersFromConfig();
 
 $transfer_lock_entity = Env::get('TRANSFER_LOCK_ENTITY');
+$emulate_transfer = Env::get('EMULATE_TRANSFER', 0);
 
 CliTransferNodeHelper::validateIdentity($private_key_path, $pub_identity);
 $private_key = file_get_contents($private_key_path);    
 
-$tr = new TransferNode($cluster, $pub_identity, $pub_vote, $private_key, $transfer_lock_entity);
+$tr = new TransferNode($cluster, $pub_identity, $pub_vote, $private_key, $transfer_lock_entity, $emulate_transfer);
 $tr->addServers($servers_data);  
 
 CliTransferNodeHelper::printServers($servers_data);
@@ -49,6 +50,6 @@ CliTransferNodeHelper::printServers($servers_data);
 $servers = $tr->getAllServers();
 
 foreach($servers as $server){
-    $tr->validateToServer($server);
+    $tr->validateToServer($server);  
     $server->disconnect();
 }

@@ -23,7 +23,7 @@ unlink($config_file);
 $srv = new NodeServer($data['name'], $data['ip'], $data['user'], $data['password']);
 $tg_token = isset($data['tg_token']) ? $data['tg_token'] : null;
 $chat_id = isset($data['chat_id']) ? $data['chat_id'] : null;
-Log::setTelegramBotConfig($tg_token, $chat_id);
+Log::setTelegramBotConfig($tg_token, $chat_id, 'DEACTIVATOR');
 
 Log::log("Deactivator started srv: {$srv->name} {$srv->ip}", 1);
 

@@ -81,7 +81,8 @@ class CheckerAssistant
     public function isGoodIdentityAndSync($ip)
     {
         $srv = $this->_transferNode->getServerByInfo($ip);      
-        $service_options = TransferNode::getOptionsFromServiceFile($srv);
+        //$service_options = TransferNode::getOptionsFromServiceFile($srv); //this method is not good for servers without solana.service
+        $service_options = TransferNode::getOptionsFromValidatorProcess($srv);
 
         $ledger = $service_options['ledger'][0];
         

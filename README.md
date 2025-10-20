@@ -7,7 +7,7 @@ Solana Node Manager (SNM) is a simple and secure CLI tool for manual and automat
 All keys and server credentials are stored in encrypted form, preventing unauthorized access in rescue mode or after reboot.  
 SNM is built in pure PHP with minimal dependencies to maximize transparency and security.  
 
-The tool is shipped with pre-bundled vendor content to mitigate supply chain attacks.  
+The tool is shipped with pre-bundled vendor content to mitigate supply-chain attacks.  
 
 It also provides a secure interface for managing validator transfers via websites or applications, powered by SSH-based command exchange.  
 
@@ -33,7 +33,11 @@ It also provides a secure interface for managing validator transfers via website
 
 ### Prerequisites
 
-Each Solana validator server (**active** or **spare**) must contain an unstaked identity file:  
+There are only a few requirements for each Solana validator server:
+
+- Only one instance of the **agave-validator** process should be running  
+- The `--vote-account` parameter must contain a valid public key  
+- The server must have an unstaked identity file located in the home directory at **~/unstaked-identity.json**. To create it, use the following command:
 
 ```bash
 solana-keygen new -s --no-bip39-passphrase -o ~/unstaked-identity.json
@@ -142,7 +146,7 @@ Main scripts:
 
 - **Fast Hot Swap:** 0.8 to 3 seconds hot swap operations  
 - **Automated Failover:** automatic failover when the primary validator goes down  
-- **Security and Transparency** — built in pure PHP with minimal dependencies and fully auditable code
+- **Security and Transparency:** built in pure PHP with minimal dependencies and fully auditable code. The tool is shipped with pre-bundled vendor content to mitigate supply-chain attacks
 - **Encrypted Sensitive Data:** validator key and SSH access to validator servers are stored in encrypted form and loaded into memory only during runtime
 - **Up to 9 spare servers:** easily switch between up to 10 configured servers  
 - **Hot Swap Compatibility:** supports both Agave and Jito validators  

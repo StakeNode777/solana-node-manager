@@ -48,7 +48,7 @@ class FileCmdRunnerWrapper
 
         $res_dir = "{$request_dir}/res";
         if (!is_dir($res_dir)) {
-            mkdir($res_dir);
+            mkdir($res_dir, '0777');
         }
         
         $tg_token = Env::get('TG_TOKEN');

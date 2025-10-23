@@ -77,23 +77,62 @@ All these files are stored inside an **encrypted directory**. When running, Sola
 sudo apt update && sudo apt upgrade -y && sudo apt install -y git
 git clone https://github.com/StakeNode777/solana-node-manager
 bash ~/solana-node-manager/install.sh
+sudo reboot
 ```
 
 > 💡 For improved security, consider installing under a non-root user with sudo privileges.
 
 ---
 
-### Web Solana Node Manager (Optional)
+### SNM External Interface (Optional)
 
-To enable web-based management, create a dedicated user and request directory:  
+This interface allows SNM to communicate securely with external applications — for example, the **Web Solana Node Manager** web UI.
+
+Communication happens over SSH using file-based request/response messaging.  
+To ensure strong security isolation, the external app connects over SSH using a **dedicated, restricted Linux user**.
+
+
+
+                 ┌──────────────────────────────────────────┐
+                 │         External App (Web UI)            │
+                 └──────────────────────────────────────────┘
+                      │                         ▲ 
+                      │ 1. Uploads a request    │ 4. Web App fetches it over SSH
+                      │ file over SSH           │
+                      v                         │
+     ┌──────────────────────────────┐     ┌─────────────────────────────────┐
+     │ /home/wsnm/snm_request_dir   │     │ /home/wsnm/snm_request_dir/res  │
+     └──────────────────────────────┘     └─────────────────────────────────┘
+                      │                              ▲
+                      │ 2. SNM reads and executes    │ 3. SNM writes response file
+                      │ the request                  │
+                      v                              │
+                 ┌────────────────────────────────────────────┐
+                 │       SNM Core (Solana Node Manager)       │
+                 └────────────────────────────────────────────┘
+
+To enable the web-based management interface:
+
+1. Create a dedicated user and request directory:  
 
 ```bash
 sudo adduser wsnm
-sudo mkdir -p /home/wsnm/snm_request_dir
-sudo chmod 777 /home/wsnm/snm_request_dir
+sudo usermod -aG wsnm "${SUDO_USER:-$USER}"
+sudo mkdir -p -m 770 /home/wsnm/snm_request_dir
+sudo chown wsnm:wsnm /home/wsnm/snm_request_dir
 ```
 
-> 💡 For better security, use `chmod 770` with a proper group instead of `777`.
+2. Close and reopen your terminal (this ensures group membership changes take effect). 
+
+3. Verify that your current user belongs to the `wsnm` group: 
+
+```
+groups
+```
+
+4. Restart Solana Node Manager in failover mode:
+
+`bash start_snm.sh`
 
 ---
 
@@ -122,9 +161,9 @@ To enable Telegram notifications:
 
 ### Multiple Configurations (Optional)
 
-We recommend installing Solana Node Manager separately for each new validator.  
+We recommend installing Solana Node Manager on a separate server for each new validator.  
 However, it is also possible to run multiple Solana Node Manager instances on the same server.  
-To do this, simply create another user and repeat the installation steps.
+To do this, simply create an additional user and repeat the installation steps.
 
 ## Usage
 

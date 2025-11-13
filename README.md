@@ -73,6 +73,8 @@ All these files are stored inside an **encrypted directory**. When running, Sola
 
 ### Installation steps
 
+1. To install please run these commands:
+
 ```bash
 sudo apt update && sudo apt upgrade -y && sudo apt install -y git
 git clone https://github.com/StakeNode777/solana-node-manager
@@ -81,6 +83,12 @@ sudo reboot
 ```
 
 > 💡 For improved security, consider installing under a non-root user with sudo privileges.
+
+2. After the server reboots, start SNM in failover mode:
+
+`bash start_snm.sh`
+
+> 💡 See the **Usage** section for reconfiguration, manual identity switch, and additional commands.
 
 ---
 

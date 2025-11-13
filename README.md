@@ -47,7 +47,7 @@ solana-keygen new -s --no-bip39-passphrase -o ~/unstaked-identity.json
 
 During setup, you will need to provide:
 
-- **Configuration file** — see [`config.conf.sample`](https://github.com/StakeNode777/solana-node-manager/config.conf.sample).  
+- **Configuration file** — see [`config.conf.sample`](https://github.com/StakeNode777/solana-node-manager/blob/main/config.conf.sample).  
   It contains:  
   
   - credentials for validator servers  

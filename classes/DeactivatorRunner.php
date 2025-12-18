@@ -22,10 +22,18 @@ class DeactivatorRunner
         $tg_data = is_array($this->_tg_data) ? $this->_tg_data : [];
         $data = $activeServer->getServerData() + $tg_data;
         file_put_contents($activeServerDataFile, json_encode($data));
-        $cmd = "nohup php {$this->_script_dir}/deactivator.php --config_file={$activeServerDataFile} > /dev/null 2>&1 &";
+
+        $output_part = '> /dev/null';
+        $log_dir = getcwd() . "/logs";
+        if (is_dir($log_dir)) {
+            $output_part = ">> {$log_dir}/deactivator.log";
+        }
+        
+        $cmd = "nohup php {$this->_script_dir}/deactivator.php --config_file={$activeServerDataFile} {$output_part} 2>&1 &";
         
         if (!$this->_emulate) {            
             Log::log("Started deactivator with config file '$activeServerDataFile'", 1);
+            Log::log("deactivator cmd: $cmd");
             shell_exec($cmd);
         } else {
             Log::log("Started deactivator mockup with config file '$activeServerDataFile'"); 

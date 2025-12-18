@@ -593,10 +593,11 @@ class TransferNode implements TransferNodeInterface
         for($i = 0; $i < 60; $i++) {
             $i_mod10 = $i%10;
             if ($i_mod10==0) {
-                self::log("deactivate: try to get ledger path #{$i}");
+                self::log("deactivate: trying to get ledger path from process options - try #{$i}");
             }
             $from_so = self::getOptionsFromValidatorProcess($srv);
             if (!empty($from_so)) {
+                self::log("deactivate: options detected - try #{$i}");
                 break;
             }
             usleep(500000);

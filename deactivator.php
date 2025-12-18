@@ -30,6 +30,7 @@ Log::log("Deactivator started srv: {$srv->name} {$srv->ip}", 1);
 for($k = 0;;$k++){
     try {
         if ($srv->connect()) {
+            Log::log("Deactivator connected to the server {$srv->ip}");
             $res = TransferNode::deactivate($srv);
             $msg = "{$srv->name} {$srv->ip} deactivated: ";
             Log::log($msg, 1);

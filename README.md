@@ -39,14 +39,14 @@ There are only a few requirements for each Solana validator server:
 - The `--vote-account` parameter must contain a valid public key  
 - The server must have an unstaked identity file located in the home directory at **~/unstaked-identity.json**. To create it, use the following command:
 
-```bash
-solana-keygen new -s --no-bip39-passphrase -o ~/unstaked-identity.json
-```
-- If the validator has automatic restart enabled (for example, via the solana.service systemd unit), the --identity option must be set to the full path of the unstaked identity file, for example:
+  ```bash
+  solana-keygen new -s --no-bip39-passphrase -o ~/unstaked-identity.json
+  ```
+- If the validator has automatic restart enabled (for example, via the solana.service systemd unit), the `--identity` option must be set to the full path of the unstaked identity file, for example:
 
-```bash
---identity [FULL_PATH_HERE]/unstaked-identity.json
-```
+  ```bash
+  --identity [FULL_PATH_HERE]/unstaked-identity.json
+  ```
 
   This ensures that the validator restarts correctly using the unstaked identity.
 

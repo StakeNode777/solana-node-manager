@@ -42,6 +42,13 @@ There are only a few requirements for each Solana validator server:
 ```bash
 solana-keygen new -s --no-bip39-passphrase -o ~/unstaked-identity.json
 ```
+- If the validator has automatic restart enabled (for example, via the solana.service systemd unit), the --identity option must be set to the full path of the unstaked identity file, for example:
+
+```bash
+--identity [FULL_PATH_HERE]/unstaked-identity.json
+```
+
+  This ensures that the validator restarts correctly using the unstaked identity.
 
 ### Configuration
 

@@ -80,10 +80,20 @@ class CheckerAssistant
     
     public function isGoodIdentityAndSync($ip)
     {
-        $srv = $this->_transferNode->getServerByInfo($ip);      
+        $srv = $this->_transferNode->getServerByInfo($ip); 
         //$service_options = TransferNode::getOptionsFromServiceFile($srv); //this method is not good for servers without solana.service
+        
         $service_options = TransferNode::getOptionsFromValidatorProcess($srv);
-
+        if (empty($service_options)) {
+            $rows = TransferNode::getListOfAgaveValidatorProcesses($srv);            
+            if (empty($rows)) {
+                $this->_lastProblem = "Seems agave-validator process is not running";
+                return false;
+            } else {
+                $this->_lastProblem = "agave-validator process is running, but no options detected";
+                return false;
+            }
+        }
         $ledger = $service_options['ledger'][0];
         
         $max_tries = 3;

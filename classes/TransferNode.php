@@ -128,9 +128,12 @@ class TransferNode implements TransferNodeInterface
             $this->validateToServer($to_srv);
         } elseif ($transfer_mode=='safe') { //'safe' mode
             $this->validateFromServer($from_srv);   
-            $this->validateToServer($to_srv);            
+            $this->validateToServer($to_srv); 
         } else {
             self::log("no validation for this mode '{$transfer_mode}'");
+            //the below is the just idea about minimal validation
+            //self::log("almost no validation for this mode '{$transfer_mode}'");
+            //$this->checkProperRunningOfAgaveValidator($to_srv);            
         }
 
         self::log("Validation finished");
@@ -428,8 +431,8 @@ class TransferNode implements TransferNodeInterface
         return $rows;
     }
     
-    public function validateServerCommon(NodeServer $srv)
-    {        
+    public function checkProperRunningOfAgaveValidator(NodeServer $srv)
+    {
         $this->tryToConnect($srv);
         
         //$this->checkServerConfig($srv); //this method is not good for servers without solana.service
@@ -439,11 +442,18 @@ class TransferNode implements TransferNodeInterface
         $service_options = self::getOptionsFromValidatorProcess($srv);
 
         if (!isset($service_options['ledger'])) {
-            throw new TransferNodeException("--ledger option not detected in solana.service - {$srv->status_label}. IP: {$srv->ip}");
+            throw new TransferNodeException("--ledger option not detected in the agave-validator process - {$srv->status_label}. IP: {$srv->ip}");
         }
         if (!isset($service_options['vote-account'])) {
-            throw new TransferNodeException("--vote-account option not detected in solana.service - {$srv->status_label}. IP: {$srv->ip}");
-        }        
+            throw new TransferNodeException("--vote-account option not detected in the agave-validator process - {$srv->status_label}. IP: {$srv->ip}");
+        }
+        
+        return $service_options;
+    }
+    
+    public function validateServerCommon(NodeServer $srv)
+    {        
+        $service_options = $this->checkProperRunningOfAgaveValidator($srv);
         
         //$ledger = $service_options['ledger'][0];
         //print_r($service_options);
@@ -466,8 +476,11 @@ class TransferNode implements TransferNodeInterface
     public static function getOptionsFromValidatorProcess(NodeServerInterface $srv)
     {
         $rows = self::getListOfAgaveValidatorProcesses($srv);
+        if (empty($rows)) {
+            return [];
+        }
         $process = $rows[0]['process'];
-       
+        
         preg_match_all('/--([a-zA-Z0-9\-]+)\s+(\S+)/', $process, $matches, PREG_SET_ORDER);
 
         $options = [];
@@ -577,13 +590,26 @@ class TransferNode implements TransferNodeInterface
     
     public static function deactivate($srv)
     {
-        $from_so = self::getOptionsFromValidatorProcess($srv);
+        for($i = 0; $i < 60; $i++) {
+            $i_mod10 = $i%10;
+            if ($i_mod10==0) {
+                self::log("deactivate: try to get ledger path #{$i}");
+            }
+            $from_so = self::getOptionsFromValidatorProcess($srv);
+            if (!empty($from_so)) {
+                break;
+            }
+            usleep(500000);
+        }
         
         $from_ledger = isset($from_so['ledger'][0]) ? $from_so['ledger'][0] : '~/ledger';
        
         $cmd = "source ~/.profile; "
             . "agave-validator -l {$from_ledger} set-identity ~/unstaked-identity.json; "
             . "agave-validator -l {$from_ledger} authorized-voter remove-all";
+            
+        self::log("deactivate: cmd - {$cmd}");            
+            
         return $srv->exec($cmd);         
     }
     

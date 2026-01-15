@@ -11,7 +11,7 @@ The tool is shipped with pre-bundled vendor content to mitigate supply-chain att
 
 It also provides a secure interface for managing validator transfers via websites or applications, powered by SSH-based command exchange.  
 
-✅ Fully compatible with **Agave** and **Jito-Solana** validators. 
+✅ Fully compatible with **Agave**, **Jito-Solana** and **BAM** validators. 
 
 ---
 

@@ -83,7 +83,7 @@ fusermount -u "${PWD}/config"
 cat >start_snm.sh <<EOF
 #!/bin/bash
 
-rerun_php_proc() {
+kill_php_proc() {
     local file="\$1"
 
     echo -e "\nKILL OLD PROCESSES for '\$file'\n"
@@ -100,8 +100,9 @@ rerun_php_proc() {
     fi
 }
 
-rerun_php_proc "snm_auto_transfer.php"
-rerun_php_proc "snm_file_cmd.php"
+kill_php_proc "snm_auto_transfer.php"
+kill_php_proc "snm_file_cmd.php"
+kill_php_proc "deactivator.php"
 
 echo "Finishing old ones"
 
@@ -194,7 +195,12 @@ fusermount -u \"${PWD}/config\"
 
 EOF
 
-echo "Installation completed. 
+echo "Installation completed.
+
+PLEASE EXIT THE TERMINAL AND LOG IN AGAIN BEFORE USING solana-node-manager
+PLEASE EXIT THE TERMINAL AND LOG IN AGAIN BEFORE USING solana-node-manager
+PLEASE EXIT THE TERMINAL AND LOG IN AGAIN BEFORE USING solana-node-manager
+ 
 To start solana-node-manager please run the following command: 
 
 bash start_snm.sh

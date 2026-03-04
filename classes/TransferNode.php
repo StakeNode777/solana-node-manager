@@ -81,7 +81,7 @@ class TransferNode implements TransferNodeInterface
         $this->doTransfer(false, $to_srv, $transfer_mode);
     }
     
-    public function checkAndTransfer($from_srv, $to_srv, $transfer_mode)
+    public function checkAndTransfer($from_srv, $to_srv, $transfer_mode, $copy_tower_file = 0)
     {
         $from_srv = $this->getServerByInfo($from_srv);
         $from_srv->setStatusLabel('FROM_SRV');
@@ -95,7 +95,7 @@ class TransferNode implements TransferNodeInterface
         }      
         $this->lockAllServers($from_srv, $to_srv, $transfer_mode);        
         $this->checkBeforeTransfer($from_srv, $to_srv, $transfer_mode);
-        $this->doTransfer($from_srv, $to_srv, $transfer_mode);
+        $this->doTransfer($from_srv, $to_srv, $transfer_mode, $copy_tower_file);
     }
     
     public function validateConfig($transfer_mode)
@@ -536,13 +536,13 @@ class TransferNode implements TransferNodeInterface
         return boolval($srv->exec($cmd));
     }
     
-    public function doTransfer($from_srv, $to_srv, $transfer_mode)
+    public function doTransfer($from_srv, $to_srv, $transfer_mode, $copy_tower_file = 0)
     {
-        $this->doTransferConservative($from_srv, $to_srv, $transfer_mode);
+        $this->doTransferConservative($from_srv, $to_srv, $transfer_mode, $copy_tower_file);
         //$this->doTransferF1($from_srv, $to_srv, $transfer_mode);
     }
     
-    public function doTransferConservative($from_srv, $to_srv, $transfer_mode)
+    public function doTransferConservative($from_srv, $to_srv, $transfer_mode, $copy_tower_file = 0)
     {
         //self::log("Emulate transfer"); return; //should be commented
         
@@ -550,9 +550,10 @@ class TransferNode implements TransferNodeInterface
         $to_srv = $this->getServerByInfo($to_srv);
         $to_srv->setStatusLabel('TO_SRV');   
         $to_so = self::getOptionsFromValidatorProcess($to_srv);
-        
-        $to_ledger = isset($to_so['ledger'][0]) ? $to_so['ledger'][0] : '~/ledger';        
+       
+        $to_ledger = isset($to_so['ledger'][0]) ? $to_so['ledger'][0] : '~/ledger';       
         $to_tower_dir = isset($to_so['tower'][0]) ? $to_so['tower'][0] : $to_ledger; 
+        $is_downloaded_tower = 0;
         
         if ($transfer_mode=='safe' || $transfer_mode=='transfer_only') {
             self::log("Starting Transfer...\n");
@@ -560,7 +561,10 @@ class TransferNode implements TransferNodeInterface
             $from_srv->setStatusLabel('FROM_SRV');       
             $from_so = self::getOptionsFromValidatorProcess($from_srv);
             $from_ledger = isset($from_so['ledger'][0]) ? $from_so['ledger'][0] : '~/ledger';
-
+            $from_tower_dir = isset($from_so['tower'][0]) ? $from_so['tower'][0] : $from_ledger;
+            $from_tower_file = "{$from_tower_dir}/tower-1_9-{$this->_pub_identity}.bin";
+            $local_tower_file = $temp_file = tempnam(sys_get_temp_dir(), 'tower_');
+            
             //old server   
             self::log("deactivation started");
             $cmd = "source ~/.profile; "
@@ -569,6 +573,12 @@ class TransferNode implements TransferNodeInterface
 
             $cmd_res = $from_srv->exec($cmd); 
             self::log("deactivation result:\n{$cmd_res}");
+            
+            if ($copy_tower_file) {
+                self::log("Starting copy tower file from '$from_tower_file' to '$local_tower_file'");
+                $is_downloaded_tower = $from_srv->downloadFile($from_tower_file, $local_tower_file);         
+            }            
+            
             //usleep(300000);
             //echo "emulate:\n {$cmd}\n";
 
@@ -576,10 +586,18 @@ class TransferNode implements TransferNodeInterface
         } else {
             self::log("Starting Activation...\n");
         }        
+        
+        if ($is_downloaded_tower) {
+            self::log("Tower filesize = " . filesize($local_tower_file));
+            $to_tower_file = "{$to_tower_dir}/tower-1_9-{$this->_pub_identity}.bin";       
+            self::log("Starting copy tower file from '$local_tower_file' to '$to_tower_file'");
+            $to_srv->uploadFile($to_tower_file, $local_tower_file);
+            unlink($local_tower_file);
+        }
    
         self::log("activation started");
         $cmd = "source ~/.profile; "
-                . "rm {$to_tower_dir}/tower-1_9-*.bin; "
+                //. "rm {$to_tower_dir}/tower-1_9-*.bin; "
                 . "echo '{$private_key}' | agave-validator -l {$to_ledger} set-identity; "
                 . "echo '{$private_key}' | agave-validator -l {$to_ledger} authorized-voter add; ";
         $cmd_res = $to_srv->exec($cmd); 

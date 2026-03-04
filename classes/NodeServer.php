@@ -1,6 +1,7 @@
 <?php
 
-use phpseclib3\Net\SSH2;
+//use phpseclib3\Net\SSH2;
+use phpseclib3\Net\SFTP;
 
 class NodeServer implements NodeServerInterface
 {
@@ -26,11 +27,12 @@ class NodeServer implements NodeServerInterface
     }
     
     public function connect()
-    {
+    {   
         if ($this->_ssh) {
             return true;
-        }        
-        $ssh = new SSH2($this->_ip);
+        }
+        //$ssh = new SSH2($this->_ip);
+        $ssh = new SFTP($this->_ip);
         $ssh->setTimeout(5);
 
         // Подключаемся к серверу
@@ -38,7 +40,7 @@ class NodeServer implements NodeServerInterface
             return false;
         }  
         $ssh->setTimeout(30);
-        $this->_ssh = $ssh;     
+        $this->_ssh = $ssh;    
         return true;
     }
     
@@ -84,5 +86,15 @@ class NodeServer implements NodeServerInterface
             'password' => $this->password
         ];
     }
+   
+    public function downloadFile($server_path, $local_path)
+    {
+        return $this->_ssh->get($server_path, $local_path);
+    }
+    
+    public function uploadFile($server_path, $local_path)
+    {
+        return $this->_ssh->put($server_path, $local_path, SFTP::SOURCE_LOCAL_FILE);
+    }    
 }
 

@@ -25,6 +25,11 @@ class CliTransferNodeHelper
         
         Env::init($config_file);
         
+        $name = Env::get('NAME', 'noname' . random_int(0, 10000));
+        $tg_token = Env::get('TG_TOKEN');
+        $chat_id = Env::get('TG_CHAT_ID');
+        Log::setTelegramBotConfig($tg_token, $chat_id, $name, 'Manual Transfer');        
+        
         $emulate_transfer = intval(Env::get('EMULATE_TRANSFER', 0));  
 
         $cluster = Env::get('CLUSTER');
@@ -75,12 +80,14 @@ class CliTransferNodeHelper
                 echo "\n{$from_srv->name} -> {$to_srv->name}\n";
                 echo "{$from_srv->user}@{$from_srv->ip} -> {$to_srv->user}@{$to_srv->ip}";                        
                 echo "\n\n";            
-                $tr->checkAndTransfer($from_srv, $to_srv, $transfer_mode);
+                $tr->checkAndTransfer($from_srv, $to_srv, $transfer_mode, 1);
+                Log::log("Manual transfer {$from_srv->name} -> {$to_srv->name} completed", 1);
             } else {
                 $to_srv = $tr->getServerByInfo($to_srv);
                 echo "\n Activation {$to_srv->name} ({$to_srv->user}@{$to_srv->ip})\n";                      
                 echo "\n\n";            
-                $tr->checkAndActivate($to_srv, $transfer_mode);                
+                $tr->checkAndActivate($to_srv, $transfer_mode);  
+                Log::log("Manual activation {$to_srv->name} completed", 1);
             }
 
         } catch (TransferNodeException $e ) {

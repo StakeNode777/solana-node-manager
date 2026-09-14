@@ -1,2 +1,5 @@
 # Composer dependencies
 /nbproject/
+/config/
+/config.enc/
+/logs/

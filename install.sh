@@ -108,7 +108,10 @@ echo "Finishing old ones"
 
 echo "Starting solana_auto_transfer_manager..."
 
-gocryptfs -idle "15s" "${PWD}/config.enc" "${PWD}/config"
+if ! gocryptfs -idle "15s" "${PWD}/config.enc" "${PWD}/config"; then
+    echo "Failed to unlock the encrypted config folder. SNM was not started."
+    exit 1
+fi
 
 nohup php $INSTALL_DIR/snm_auto_transfer.php --config_dir=$PWD/config >> $PWD/logs/snm_auto_transfer.log 2>&1 &
 nohup php $INSTALL_DIR/snm_file_cmd.php --config_dir=$PWD/config >> $PWD/logs/snm_file_cmd.log 2>&1 &

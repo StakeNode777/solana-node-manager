@@ -536,10 +536,96 @@ class TransferNode implements TransferNodeInterface
         return boolval($srv->exec($cmd));
     }
     
+    /**
+     * Retries failed curl commands up to three times; defaults to true if status is unknown.
+     * @return bool
+     */
+    public static function isAlpenglow($cluster = 'mainnet')
+    {
+        $output = self::getAgGenesisCert($cluster);
+        if (trim($output) === '') {
+            $url = $cluster=='testnet'
+                ? 'https://api.testnet.solana.com'
+                : 'https://api.mainnet-beta.solana.com';
+            self::log("WARNING: Alpenglow status for {$url} is unknown.");
+            return true;
+        }
+
+        $data = json_decode($output, true);
+        return self::isAlpenglowByJsonData($data);
+    }
+
+    /**
+     * @return string Raw RPC response, or an empty string if the request fails.
+     */
+    public static function getAgGenesisCert($cluster = 'mainnet')
+    {
+        $url = 'https://api.mainnet-beta.solana.com';
+        if ($cluster=='testnet') {
+            $url = 'https://api.testnet.solana.com';
+        }
+        $request = '{"jsonrpc":"2.0","id":1,"method":"getAgGenesisCert"}';
+        $cmd = "curl -sS --fail --max-time 5 {$url} -X POST "
+            . "-H 'Content-Type: application/json' -d " . escapeshellarg($request);
+        $max_tries = 3;
+        for ($i = 1; $i <= $max_tries; $i++) {
+            $output = [];
+            $exit_status = 0;
+            exec($cmd, $output, $exit_status);
+
+            if ($exit_status === 0) {
+                break;
+            }
+
+            self::log("WARNING: Can't determine Alpenglow status for {$url}, try #{$i}/{$max_tries}. Exit status: {$exit_status}");
+            if ($i < $max_tries) {
+                sleep(1);
+            }
+        }
+
+        if ($exit_status !== 0) {
+            $output = [];
+        }
+
+        return implode("\n", $output);
+    }
+
+    /**
+     * @param mixed $data RPC response decoded with json_decode($json, true).
+     * @return bool Defaults to true if the response does not determine the status.
+     */
+    public static function isAlpenglowByJsonData($data)
+    {
+        $error = 'Invalid Alpenglow genesis info';
+        if (is_array($data)) {
+            if (array_key_exists('error', $data)) {
+                $error = 'RPC error: ' . json_encode($data['error']);
+            } elseif (array_key_exists('result', $data)) {
+                if ($data['result'] === null) {
+                    self::log("Alpenglow is NOT active");
+                    return false;
+                }
+                $cert = $data['result'];
+                if (is_array($cert) && isset($cert['block'], $cert['signature'])
+                    && is_array($cert['block']) && is_array($cert['signature'])
+                    && isset($cert['block']['slot'], $cert['block']['blockId'])) {
+                    self::log("Alpenglow is active");
+                    return true;
+                }
+            }
+        }
+        
+        self::log("WARNING: Alpenglow status is unknown. {$error}. Assuming Alpenglow is active");
+        return true;
+    }
+
     public function doTransfer($from_srv, $to_srv, $transfer_mode, $copy_tower_file = 0)
     {
-        $this->doTransferConservative($from_srv, $to_srv, $transfer_mode, $copy_tower_file);
-        //$this->doTransferF1($from_srv, $to_srv, $transfer_mode);
+        if (static::isAlpenglow($this->_cluster)) {
+            $this->doTransferConservativeAlpenglow($from_srv, $to_srv, $transfer_mode, $copy_tower_file);
+        } else {
+            $this->doTransferConservative($from_srv, $to_srv, $transfer_mode, $copy_tower_file);
+        }
     }
     
     public function doTransferConservative($from_srv, $to_srv, $transfer_mode, $copy_tower_file = 0)
@@ -605,6 +691,79 @@ class TransferNode implements TransferNodeInterface
         self::log("activation result:\n{$cmd_res}");
         self::log("Transfer finished");        
     } 
+    
+    public function doTransferConservativeAlpenglow($from_srv, $to_srv, $transfer_mode, $copy_vote_history_file = 0)
+    {
+        //self::log("Emulate transfer"); return; //should be commented
+        
+        $private_key = $this->_private_key;
+        $to_srv = $this->getServerByInfo($to_srv);
+        $to_srv->setStatusLabel('TO_SRV');   
+        $to_so = self::getOptionsFromValidatorProcess($to_srv);
+       
+        $to_ledger = isset($to_so['ledger'][0]) ? $to_so['ledger'][0] : '~/ledger';       
+        $to_vh_dir = $to_ledger; 
+        $is_downloaded_vh = 0;
+        
+        if ($transfer_mode=='safe' || $transfer_mode=='transfer_only') {
+            self::log("Starting Transfer...\n");
+            $from_srv = $this->getServerByInfo($from_srv);
+            $from_srv->setStatusLabel('FROM_SRV');       
+            $from_so = self::getOptionsFromValidatorProcess($from_srv);
+            $from_ledger = isset($from_so['ledger'][0]) ? $from_so['ledger'][0] : '~/ledger';
+            $from_vh_dir = $from_ledger;
+            $from_vh_file = "{$from_vh_dir}/vote_history-{$this->_pub_identity}.bin";
+            $local_vh_file = $temp_file = tempnam(sys_get_temp_dir(), 'vote_history_');
+            
+            //old server   
+            self::log("deactivation started");
+            $cmd = "source ~/.profile && "
+                    . "agave-validator -l {$from_ledger} set-identity ~/unstaked-identity.json --do-not-require-vote-history && "
+                    . "agave-validator -l {$from_ledger} authorized-voter remove-all";
+
+            $cmd_res = $from_srv->exec($cmd); 
+            $exit_status = $from_srv->getExitStatus();
+            self::log("deactivation result:\n{$cmd_res}");
+
+            if ($cmd_res === false || $exit_status !== 0) {
+                $status = var_export($exit_status, true);
+                throw new TransferNodeException(
+                    "Deactivation failed or was not confirmed on {$from_srv->ip}. "
+                    . "Exit status: {$status}. Transfer aborted."
+                );
+            }
+            
+            if ($copy_vote_history_file) {
+                self::log("Starting copy vote history file from '$from_vh_file' to '$local_vh_file'");
+                $is_downloaded_vh = $from_srv->downloadFile($from_vh_file, $local_vh_file);         
+            }     
+        } else {
+            self::log("Starting Activation...\n");
+        }        
+        
+        $do_not_require_part = "--do-not-require-vote-history";
+        $was_transfered_vh = 0;
+        if ($is_downloaded_vh) {
+            self::log("vote_history filesize = " . filesize($local_vh_file));
+            $to_vh_file = "{$to_vh_dir}/vote_history-{$this->_pub_identity}.bin";       
+            self::log("Starting copy vote history file from '$local_vh_file' to '$to_vh_file'");
+            $was_transfered_vh = $to_srv->uploadFile($to_vh_file, $local_vh_file);
+            if ($was_transfered_vh) {
+                unlink($local_vh_file);
+                $do_not_require_part = "";
+            }
+        }
+   
+        self::log("activation started");
+        $cmd = "source ~/.profile; "
+                //. "rm {$to_tower_dir}/tower-1_9-*.bin; "
+                . "echo '{$private_key}' | agave-validator -l {$to_ledger} set-identity {$do_not_require_part}; "
+                . "echo '{$private_key}' | agave-validator -l {$to_ledger} authorized-voter add; ";
+        $cmd_res = $to_srv->exec($cmd); 
+        //echo "emulate:\n {$cmd}\n";
+        self::log("activation result:\n{$cmd_res}");
+        self::log("Transfer finished");        
+    }     
     
     public static function deactivate($srv)
     {
@@ -727,4 +886,3 @@ class TransferNode implements TransferNodeInterface
         Log::log($msg);
     }
 }
-

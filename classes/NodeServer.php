@@ -64,6 +64,11 @@ class NodeServer implements NodeServerInterface
         return $this->_ssh->exec($cmd);
     }
     
+    public function getExitStatus()
+    {
+        return $this->_ssh->getExitStatus();
+    }
+
     public function resetChannel()
     {
         //Log::log("reset channel");
@@ -97,4 +102,3 @@ class NodeServer implements NodeServerInterface
         return $this->_ssh->put($server_path, $local_path, SFTP::SOURCE_LOCAL_FILE);
     }    
 }
-

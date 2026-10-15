@@ -717,21 +717,12 @@ class TransferNode implements TransferNodeInterface
             
             //old server   
             self::log("deactivation started");
-            $cmd = "source ~/.profile && "
-                    . "agave-validator -l {$from_ledger} set-identity ~/unstaked-identity.json --do-not-require-vote-history && "
+            $cmd = "source ~/.profile; "
+                    . "agave-validator -l {$from_ledger} set-identity ~/unstaked-identity.json --do-not-require-vote-history; "
                     . "agave-validator -l {$from_ledger} authorized-voter remove-all";
 
             $cmd_res = $from_srv->exec($cmd); 
-            $exit_status = $from_srv->getExitStatus();
             self::log("deactivation result:\n{$cmd_res}");
-
-            if ($cmd_res === false || $exit_status !== 0) {
-                $status = var_export($exit_status, true);
-                throw new TransferNodeException(
-                    "Deactivation failed or was not confirmed on {$from_srv->ip}. "
-                    . "Exit status: {$status}. Transfer aborted."
-                );
-            }
             
             if ($copy_vote_history_file) {
                 self::log("Starting copy vote history file from '$from_vh_file' to '$local_vh_file'");

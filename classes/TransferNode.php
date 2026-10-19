@@ -744,6 +744,13 @@ class TransferNode implements TransferNodeInterface
                 $do_not_require_part = "";
             }
         }
+
+        if (!$was_transfered_vh && ($transfer_mode=='safe' || $transfer_mode=='transfer_only')) {
+            self::log("Vote history was not transferred. Waiting 5 seconds before activation", 1);
+            self::log("Vote history was not transferred. Waiting 5 seconds before activation");
+            self::log("Vote history was not transferred. Waiting 5 seconds before activation");
+            sleep(5);
+        }
    
         self::log("activation started");
         $cmd = "source ~/.profile; "

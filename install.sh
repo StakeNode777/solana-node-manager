@@ -52,7 +52,24 @@ fi
 
 sudo apt-get update && sudo apt-get upgrade -y
 sudo apt install -y curl gocryptfs nano php php-curl
-read -p "Solana version: " SOLANA_VERSION
+read -r -p "Solana version [4.3.0]: " SOLANA_VERSION
+SOLANA_VERSION="${SOLANA_VERSION:-4.3.0}"
+
+# 1. Validate version format (must be X.Y.Z)
+if [[ ! "$SOLANA_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "Error: Invalid version format. Please use X.Y.Z format (e.g., 4.3.0)."
+    exit 1
+fi
+
+# 2. Check minimal version requirement
+MIN_VERSION="4.3.0"
+LOWEST_VERSION=$(printf '%s\n%s' "$MIN_VERSION" "$SOLANA_VERSION" | sort -V | head -n 1)
+
+if [[ "$LOWEST_VERSION" != "$MIN_VERSION" ]]; then
+    echo "Error: Solana version must be $MIN_VERSION or higher. Current version: $SOLANA_VERSION."
+    exit 1
+fi
+
 sh -c "$(curl -sSfL https://release.anza.xyz/v${SOLANA_VERSION}/install)"
 export PATH="${HOME}/.local/share/solana/install/active_release/bin:$PATH"
 echo "Creating logs dir..."

@@ -410,7 +410,8 @@ class TransferNode implements TransferNodeInterface
     }
     
     public static function getListOfAgaveValidatorProcesses(NodeServerInterface $srv) {        
-        $cmd = "ps -eo user,pid,cmd | grep agave-validator | grep -v grep";
+        // The default user column truncates long names (e.g. dinamovik -> dinamov+).
+        $cmd = "ps -eo user:256,pid,cmd | grep agave-validator | grep -v grep";
         $output = $srv->exec($cmd);
         $lines = explode("\n", $output);
 
